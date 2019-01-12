@@ -1,5 +1,3 @@
-using System;
-
 namespace rockx.Models
 {
     public class ErrorViewModel

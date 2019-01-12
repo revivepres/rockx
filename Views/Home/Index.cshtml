@@ -1,18 +1,101 @@
-﻿@{
-    ViewData["Title"] = "Home";
+﻿@model rockx.Models.AttendanceViewModel
+@{
+    ViewData["Title"] = "Record Attendance";
 }
 
-<div class="row">
-    <div class="col-md-3">
-        <h2>Hello World</h2>
+<span id="top" hidden></span>
+
+<form asp-action="Save" class="mainbody">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="form-group">
+        <strong><label class="control-label">Record Attendance</label></strong>
+        <div class="input-group">
+            <div class="input-group-prepend">
+                <span class="input-group-text"><i class="far fa-calendar-alt"></i></span>
+            </div>
+            <input asp-for="Date" id="selectedDate" class="form-control" required />
+            <div class="input-group-append" id="button-addon4">
+                <button type="button" id="btnSave" data-toggle="modal" data-target="#submitModal" class="btn btn-success">Save</button>
+            </div>
+        </div>
+        <span asp-validation-for="Date" class="text-danger"></span>
     </div>
-    <div class="col-md-3">
-        <h2>TBD</h2>
+
+    <div class="form-group" hidden>
+        <input asp-for="GuestCount" id="guestCountInput" class="form-control" />
     </div>
-    <div class="col-md-3">
-        <h2>TBD</h2>
+
+    <p><br /></p>
+
+    <table class="table table-hover">
+        <thead>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <i class="fas fa-user-slash"></i>
+                    Guests <br>
+                    <small class="text-muted">Count: <span id="guestCount">0</span></small>
+                </td>
+                <td class="text-right">
+                    <button id="btnGuestdec" type="button" class="btn btn-secondary btn-sm"> Minus - </button>
+                    <button id="btnGuestinc" type="button" class="btn btn-info btn-sm"> Plus + </button>
+                </td>
+            </tr>
+            @for (int i = 0; i < Model.People.Count; i++)
+            {
+                <tr>
+                    <td>
+                        <i class="fas fa-user-check"></i> @Model.People[i].FirstName @Model.People[i].LastName
+                    </td>
+                    <td class="text-right">
+                        <div hidden>
+                            @Html.CheckBoxFor(model => model.People[i].IsAttend, new { @id = "person_" + @i })
+                        </div>
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input attendchkbox"
+                                   id="@i"
+                                   checked="@Model.People[i].IsAttend">
+                            <label class="custom-control-label" for="@i">&nbsp;</label>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- Modal -->
+    <div class="modal fade" id="submitModal" tabindex="-1" role="dialog" aria-labelledby="submitModal" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Save Changes</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="alreadyRecorded" class="alert alert-danger" role="alert">
+                        <strong>
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </strong>
+                        Attendance for this date was already recorded.
+                    </div>
+                    Total Attendees: <span id="totalAttendees"></span><br />
+                    Are you sure you want to save these changes?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <input type="submit" value="Confirm" class="btn btn-success" />
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="col-md-3">
-        <h2>TBD</h2>
-    </div>
-</div>
+</form>
+
+<span id="bottom" hidden></span>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script src="~/js/home.js"></script>
+}

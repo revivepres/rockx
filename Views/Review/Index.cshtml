@@ -1,0 +1,38 @@
+﻿@model rockx.Models.ReviewViewModel
+
+@{
+    ViewData["Title"] = "Review Attendance";
+}
+
+<div class="mainbody">
+    <div class="form-group">
+        <strong><label class="control-label">Review Attendance</label></strong>
+        <div class="input-group">
+            <div class="input-group-prepend">
+                <label class="input-group-text" for="dateSelection">
+                    <i class="far fa-calendar-alt"></i>
+                </label>
+            </div>
+            <select class="custom-select" id="dateSelection">
+                @foreach (var date in Model.Dates)
+                {
+                    <option value="@date.ToString("yyyy-MM-dd")">@date.ToString("yyyy-MM-dd")</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    <p><br /></p>
+
+    <div id="loader" class="loader" hidden></div>
+
+    <table id="peopleTable" class="table table-hover">
+        <thead>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <script src="~/js/review.js"></script>
+}
