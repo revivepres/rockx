@@ -21,7 +21,10 @@ namespace rockx.Data
             try
             {
                 await _connection.OpenAsync();
-                var command = new SqlCommand($"SELECT person.firstname, person.lastname, personalias.id FROM person JOIN personalias ON person.id = personalias.personid JOIN groupmember ON person.id = groupmember.personid WHERE person.issystem = 'false' AND groupmember.groupid = {groupId}", _connection);
+                var command = new SqlCommand($@"SELECT person.firstname, person.lastname, personalias.id FROM person JOIN personalias 
+                    ON person.id = personalias.personid JOIN groupmember ON person.id = groupmember.personid 
+                    WHERE person.issystem = 'false' AND groupmember.groupid = {groupId}
+                    ORDER BY person.firstname", _connection);
                 var reader = await command.ExecuteReaderAsync();
                 while (reader.Read())
                 {
