@@ -1,0 +1,27 @@
+﻿@model rockx.Models.LoginViewModel
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="row">
+    <div class="col-md-12 text-center">
+        <form asp-action="Login">
+            <strong><label class="control-label">Please Login</label></strong>
+
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fas fa-key"></i></span>
+                </div>
+                <input asp-for="Password" type="password" class="form-control" required />
+                <div class="input-group-append">
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<p><br /></p>
+<div class="alert alert-danger text-center" role="alert" hidden="@Model.success">
+    <strong>Invalid Login!</strong>
+</div>
+

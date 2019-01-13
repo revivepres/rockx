@@ -1,9 +1,13 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Net;
 
 namespace rockx
 {
@@ -28,8 +32,18 @@ namespace rockx
             
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
-            //services.AddDbContext<DbContext>(options =>
-            //     options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            services.AddSingleton<IConfiguration>(Configuration);
+
+            services.AddScoped<Data.IDbHandler, Data.SqlHandler>();
+            //services.AddScoped<Data.IDbHandler, Data.MockdbHandler>();
+
+            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
+            {
+                options.ExpireTimeSpan = TimeSpan.FromDays(30);
+                options.SlidingExpiration = true;
+                options.LoginPath = "/Login/Index";
+                options.AccessDeniedPath = "/Login/Index";
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -48,6 +62,17 @@ namespace rockx
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseCookiePolicy();
+            app.UseAuthentication();
+
+            //// Hack - redirect for 401
+            //app.UseStatusCodePages(async context => {
+            //    var request = context.HttpContext.Request;
+            //    var response = context.HttpContext.Response;
+            //    if (response.StatusCode == (int)HttpStatusCode.Unauthorized)
+            //    {
+            //        response.Redirect("/Login/Index");
+            //    }
+            //});
 
             app.UseMvc(routes =>
             {

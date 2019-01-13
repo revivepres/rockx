@@ -1,7 +1,9 @@
 ﻿// home.js
 $(document).ready(function () {
-    GuestCount.init(0);
-    SelectedDate.init();
+    var guestcount = $("#guestCountInput").val() || 0;
+    if (guestcount > 0) { $("#recordSaved").attr("hidden", false); }
+    GuestCount.init(guestcount);
+    //SelectedDate.init();
 });
 
 // EVENT HANDLERS
@@ -31,8 +33,14 @@ $("#btnSave").click(function (event) {
         event.stopPropagation();
         return;
     }
-    var total = $("input[type='checkbox']:checked").length / 2;
-    total += GuestCount.get();
+    var total = $("input[type='checkbox']:checked").length;
+    if (total === 0) {
+        alert("Must select at least one member!");
+        event.stopPropagation();
+        return;
+    }
+    total = total / 2;
+    total += parseInt(GuestCount.get());
     $("#totalAttendees").text(total);
     $("#alreadyRecorded").hide();
     $.ajax({

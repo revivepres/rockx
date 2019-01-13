@@ -1,19 +1,20 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using rockx.Data;
 
 namespace rockx.Controllers
 {
+    [Authorize]
     [Route("[controller]")]
     public class ApiController : Controller
     {
-        private DbHandler _dbHandler;
+        private IDbHandler _dbHandler;
 
-        public ApiController()
+        public ApiController(IDbHandler dbHandler)
         {
-            var connectionString = @"Server=tcp:revivepresdev.database.windows.net,1433;Initial Catalog=ROCKDEV;Persist Security Info=False;User ID=rock;Password=r0ckxApp;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
-            _dbHandler = new DbHandler(connectionString);
+            _dbHandler = dbHandler;
         }
 
         [HttpGet("HasRecords/{date}")]
@@ -21,8 +22,9 @@ namespace rockx.Controllers
         {
             if (ModelState.IsValid)
             {
-                await Task.Delay(10);
-                return Ok(true);
+                var people = await _dbHandler.GetPeopleForDate(date);
+                var result = people.Count > 0 ? true : false;
+                return Ok(result);
             }
             return BadRequest();
         }

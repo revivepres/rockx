@@ -1,27 +1,34 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using rockx.Data;
 using rockx.Models;
 
 namespace rockx.Controllers
 {
+    [Authorize]
     public class HomeController : Controller
     {
-        private DbHandler _dbHandler;
+        private IDbHandler _dbHandler;
+        private IConfiguration _configuration;
 
-        public HomeController()
+        public HomeController(IDbHandler dbHandler, IConfiguration configuration)
         {
-            var connectionString = @"Server=tcp:revivepresdev.database.windows.net,1433;Initial Catalog=ROCKDEV;Persist Security Info=False;User ID=rock;Password=r0ckxApp;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
-            _dbHandler = new DbHandler(connectionString);
+            _dbHandler = dbHandler;
+            _configuration = configuration;
         }
 
         public async Task<IActionResult> Index()
         {
             var model = new AttendanceViewModel();
-            model.People = await _dbHandler.GetPeople();
+            var groupid = _configuration.GetValue<int>("GroupId");
+            model.People = await _dbHandler.GetPeopleFromGroup(groupid);
             model.GuestCount = 0;
+            model.Date = DateTime.Now;
             return View(model);
         }
 
@@ -30,11 +37,32 @@ namespace rockx.Controllers
         {
             if (ModelState.IsValid)
             {
-                await Task.Delay(10);
-                //return RedirectToAction(nameof(Index));
-                return View();
+                List<Attendance> attendance = new List<Attendance>();
+                foreach (var person in model.People)
+                {
+                    Attendance record = new Attendance
+                    {
+                        CampusId = _configuration.GetValue<int>("CampusId"),
+                        CreatedByPersonAliasId = _configuration.GetValue<int>("PersonAliasId"),
+                        CreatedDateTime = DateTime.Now,
+                        DidAttend = person.IsAttend,
+                        Guid = Guid.NewGuid(),
+                        GroupId = _configuration.GetValue<int>("GroupId"),
+                        LocationId = _configuration.GetValue<int>("LocationId"),
+                        ModifiedByPersonAliasId = _configuration.GetValue<int>("PersonAliasId"),
+                        ModifiedDateTime = DateTime.Now,
+                        Note = "Recorded from Rockx",
+                        PersonAliasId = person.Id,
+                        Rsvp = _configuration.GetValue<int>("Rsvp"),
+                        ScheduleId = _configuration.GetValue<int>("ScheduleId"),
+                        StartDateTime = model.Date
+                    };
+                    attendance.Add(record);
+                }
+                await _dbHandler.AddAttendance(attendance, model.GuestCount);
+                return View("Index", model);
             }
-            return View();
+            return RedirectToAction(nameof(Index));
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

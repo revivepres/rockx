@@ -4,7 +4,6 @@
 }
 
 <span id="top" hidden></span>
-
 <form asp-action="Save" class="mainbody">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <div class="form-group">
@@ -22,7 +21,14 @@
     </div>
 
     <div class="form-group" hidden>
-        <input asp-for="GuestCount" id="guestCountInput" class="form-control" />
+        <input asp-for="GuestCount" id="guestCountInput" />
+    </div>
+
+    <div id="recordSaved" hidden>
+        <p><br /></p>
+        <div class="alert alert-success text-center" role="alert">
+            <strong>Attendance Saved!</strong>
+        </div>
     </div>
 
     <p><br /></p>
@@ -38,8 +44,8 @@
                     <small class="text-muted">Count: <span id="guestCount">0</span></small>
                 </td>
                 <td class="text-right">
-                    <button id="btnGuestdec" type="button" class="btn btn-secondary btn-sm"> Minus - </button>
-                    <button id="btnGuestinc" type="button" class="btn btn-info btn-sm"> Plus + </button>
+                    <button id="btnGuestdec" type="button" class="btn btn-secondary btnbox"><strong> - </strong></button>
+                    <button id="btnGuestinc" type="button" class="btn btn-info btnbox"><strong> + </strong></button>
                 </td>
             </tr>
             @for (int i = 0; i < Model.People.Count; i++)
@@ -51,6 +57,9 @@
                     <td class="text-right">
                         <div hidden>
                             @Html.CheckBoxFor(model => model.People[i].IsAttend, new { @id = "person_" + @i })
+                            @Html.TextBoxFor(model => model.People[i].FirstName)
+                            @Html.TextBoxFor(model => model.People[i].LastName)
+                            @Html.TextBoxFor(model => model.People[i].Id)
                         </div>
                         <div class="custom-control custom-checkbox">
                             <input type="checkbox" class="custom-control-input attendchkbox"
@@ -85,7 +94,7 @@
                     Are you sure you want to save these changes?
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                     <input type="submit" value="Confirm" class="btn btn-success" />
                 </div>
             </div>

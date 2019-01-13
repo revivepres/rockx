@@ -1,21 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using rockx.Data;
 using rockx.Models;
 
 namespace rockx.Controllers
 {
+    [Authorize]
     public class ReviewController : Controller
     {
-        private DbHandler _dbHandler;
+        private IDbHandler _dbHandler;
 
-        public ReviewController()
+        public ReviewController(IDbHandler dbHandler)
         {
-            var connectionString = @"Server=tcp:revivepresdev.database.windows.net,1433;Initial Catalog=ROCKDEV;Persist Security Info=False;User ID=rock;Password=r0ckxApp;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
-            _dbHandler = new DbHandler(connectionString);
+            _dbHandler = dbHandler;
         }
 
         public async Task<IActionResult> Index()
