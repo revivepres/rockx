@@ -8,7 +8,7 @@ namespace rockx.Data
     {
         Task<List<Person>> GetPeopleFromGroup(int groupId);
         Task<List<DateTime>> GetDates();
-        Task<List<Person>> GetPeopleForDate(DateTime date);
+        Task<List<Person>> GetPeopleFromGroupByDate(int groupId, DateTime date);
         Task<int> GetGuestsForDate(DateTime date);
         Task AddAttendance(List<Attendance> attendance, int guestCount);
     }

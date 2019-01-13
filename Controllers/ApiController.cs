@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using rockx.Data;
 
 namespace rockx.Controllers
@@ -11,10 +12,12 @@ namespace rockx.Controllers
     public class ApiController : Controller
     {
         private IDbHandler _dbHandler;
+        private IConfiguration _configuration;
 
-        public ApiController(IDbHandler dbHandler)
+        public ApiController(IDbHandler dbHandler, IConfiguration configuration)
         {
             _dbHandler = dbHandler;
+            _configuration = configuration;
         }
 
         [HttpGet("HasRecords/{date}")]
@@ -22,7 +25,8 @@ namespace rockx.Controllers
         {
             if (ModelState.IsValid)
             {
-                var people = await _dbHandler.GetPeopleForDate(date);
+                var groupid = _configuration.GetValue<int>("GroupId");
+                var people = await _dbHandler.GetPeopleFromGroupByDate(groupid, date);
                 var result = people.Count > 0 ? true : false;
                 return Ok(result);
             }
@@ -34,7 +38,8 @@ namespace rockx.Controllers
         {
             if (ModelState.IsValid)
             {
-                var people = await _dbHandler.GetPeopleForDate(date);
+                var groupid = _configuration.GetValue<int>("GroupId");
+                var people = await _dbHandler.GetPeopleFromGroupByDate(groupid, date);
                 var guests = await _dbHandler.GetGuestsForDate(date);
                 var result = new
                 {

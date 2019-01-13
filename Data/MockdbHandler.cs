@@ -25,7 +25,7 @@ namespace rockx.Data
             return _mockdata.Dates();
         }
 
-        public async Task<List<Person>> GetPeopleForDate(DateTime date)
+        public async Task<List<Person>> GetPeopleFromGroupByDate(int groupId, DateTime date)
         {
             await Task.Delay(10);
             return _mockdata.People();

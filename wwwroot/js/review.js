@@ -9,6 +9,9 @@ $("#dateSelection").on("change", function (event) {
     $("#loader").show();
     var total = 0;
     var date = $(this).val().trim();
+    if (date.length > 10) {
+        return;
+    }
     $.ajax({
         url: "api/GetRecords/" + date,
         type: "get",

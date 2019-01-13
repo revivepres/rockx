@@ -14,6 +14,7 @@
                 </label>
             </div>
             <select class="custom-select" id="dateSelection">
+                <option>Select a Date</option>
                 @foreach (var date in Model.Dates)
                 {
                     <option value="@date.ToString("yyyy-MM-dd")">@date.ToString("yyyy-MM-dd")</option>
