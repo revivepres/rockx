@@ -156,12 +156,13 @@ namespace rockx.Data
                 foreach (var attendee in attendance)
                 {
                     SqlCommand cmd = new SqlCommand($@"
-                    INSERT INTO attendance ([locationid],[groupid],[startdatetime],[didattend],[note],[guid],[createddatetime],[modifieddatetime],
+                    INSERT INTO attendance ([locationid],[groupid],[scheduleid],[startdatetime],[didattend],[note],[guid],[createddatetime],[modifieddatetime],
                         [createdbypersonaliasid],[modifiedbypersonaliasid],[campusid],[personaliasid],[rsvp])
-                    VALUES (@locationid,@groupid,@startdatetime,@didattend,@note,@guid,@createddatetime,@modifieddatetime,
+                    VALUES (@locationid,@groupid,@scheduleid,@startdatetime,@didattend,@note,@guid,@createddatetime,@modifieddatetime,
                         @createdbypersonaliasid,@modifiedbypersonaliasid,@campusid,@personaliasid,@rsvp)", _connection);
                     cmd.Parameters.Add(new SqlParameter("@locationid", attendee.LocationId));
                     cmd.Parameters.Add(new SqlParameter("@groupid", attendee.GroupId));
+                    cmd.Parameters.Add(new SqlParameter("@scheduleid", attendee.ScheduleId));
                     cmd.Parameters.Add(new SqlParameter("@startdatetime", attendee.StartDateTime));
                     cmd.Parameters.Add(new SqlParameter("@didattend", attendee.DidAttend));
                     cmd.Parameters.Add(new SqlParameter("@note", attendee.Note));
