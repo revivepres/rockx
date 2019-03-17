@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
 
@@ -52,7 +53,7 @@ namespace rockx.Data
             try
             {
                 await _connection.OpenAsync();
-                var command = new SqlCommand($"SELECT DISTINCT sundaydate FROM attendance WHERE sundaydate > DATEADD(DAY, DATEDIFF(DAY, 365, GETDATE()), 0) ORDER BY sundaydate DESC", _connection);
+                var command = new SqlCommand($"SELECT DISTINCT sundaydate FROM attendanceoccurrence WHERE sundaydate > DATEADD(DAY, DATEDIFF(DAY, 365, GETDATE()), 0) ORDER BY sundaydate DESC", _connection);
                 var reader = await command.ExecuteReaderAsync();
                 while (reader.Read())
                 {
@@ -77,11 +78,14 @@ namespace rockx.Data
                 var sqlDate = date.ToString("yyyyMMdd");
                 var command = new SqlCommand($@"
                     SELECT person.firstname, person.lastname, personalias.id, attendance.didattend
-                    FROM attendance JOIN personalias
+                    FROM attendance 
+                    JOIN personalias
                     ON attendance.personaliasid = personalias.id
                     JOIN person
                     ON personalias.personid = person.id
-                    WHERE attendance.groupid = {groupId} AND attendance.sundaydate = '{sqlDate}'
+                    JOIN attendanceoccurrence
+                    ON attendanceoccurrence.id = attendance.occurrenceid
+                    WHERE attendanceoccurrence.groupid = {groupId} AND attendanceoccurrence.sundaydate = '{sqlDate}'
                     ORDER BY person.firstname", _connection);
                 var reader = await command.ExecuteReaderAsync();
                 while (reader.Read())
@@ -135,51 +139,91 @@ namespace rockx.Data
                 await _connection.OpenAsync();
                 // Some initial values
                 var sundaydate = attendance[0].StartDateTime;
-                var createddate = attendance[0].CreatedDateTime;
-                var createdby = attendance[0].CreatedByPersonAliasId;
 
-                // Clear out the tables
-                SqlCommand cmdDeleteAttendance = new SqlCommand($@"
-                    DELETE FROM attendance WHERE sundaydate = @sundaydate", _connection);
-                cmdDeleteAttendance.Parameters.Add(new SqlParameter("@sundaydate", sundaydate));
-                cmdDeleteAttendance.ExecuteNonQuery();
-                SqlCommand cmdDeleteGuests = new SqlCommand($@"
-                    DELETE FROM attendanceguests WHERE sundaydatetime = @sundaydatetime", _connection);
-                cmdDeleteGuests.Parameters.Add(new SqlParameter("@sundaydatetime", sundaydate));
-                cmdDeleteGuests.ExecuteNonQuery();
+                // Clear out the tables if replacing record
+                SqlCommand cmdGetOccurrenceId = new SqlCommand($@"
+                    SELECT id FROM attendanceoccurrence WHERE sundaydate = @sundaydate", _connection);
+                cmdGetOccurrenceId.Parameters.Add(new SqlParameter("@sundaydate", sundaydate));
+                var result = cmdGetOccurrenceId.ExecuteScalar();
+                if (result != null)
+                {
+                    var oid = Convert.ToInt32(result);
+                    // Delete from Attendance
+                    SqlCommand cmdDeleteAttendance = new SqlCommand($@"
+                        DELETE FROM attendance WHERE occurrenceid = @occurrenceid", _connection);
+                    cmdDeleteAttendance.Parameters.Add(new SqlParameter("@occurrenceid", oid));
+                    cmdDeleteAttendance.ExecuteNonQuery();
 
-                // Insert the new records
-                SqlCommand cmdInsertGuests = new SqlCommand($@"
-                INSERT INTO attendanceguests ([createddatetime],[count],[createdbypersonaliasid],[sundaydatetime])
-                    VALUES (@createddatetime,@count,@createdbypersonaliasid,@sundaydatetime)", _connection);
-                cmdInsertGuests.Parameters.Add(new SqlParameter("@createddatetime", createddate));
-                cmdInsertGuests.Parameters.Add(new SqlParameter("@count", guestCount));
-                cmdInsertGuests.Parameters.Add(new SqlParameter("@createdbypersonaliasid", createdby));
-                cmdInsertGuests.Parameters.Add(new SqlParameter("@sundaydatetime", sundaydate));
-                cmdInsertGuests.ExecuteNonQuery();
+                    // Delete from Guest
+                    SqlCommand cmdDeleteGuests = new SqlCommand($@"
+                        DELETE FROM attendanceguests WHERE occurrenceid = @occurrenceid", _connection);
+                    cmdDeleteGuests.Parameters.Add(new SqlParameter("@occurrenceid", oid));
+                    cmdDeleteGuests.ExecuteNonQuery();
+
+                    // Delete from Occurrence
+                    SqlCommand cmdDeleteOccurrence = new SqlCommand($@"
+                        DELETE FROM attendanceoccurrence WHERE id = @id", _connection);
+                    cmdDeleteOccurrence.Parameters.Add(new SqlParameter("@id", oid));
+                    cmdDeleteOccurrence.ExecuteNonQuery();
+                }
+
+                // Add to Occurrence
+                SqlCommand cmdInsertOccurrence = new SqlCommand($@"
+                INSERT INTO attendanceoccurrence ([groupid],[locationid],[scheduleid],[occurrencedate],[didnotoccur],[guid],[createddatetime],
+                    [modifieddatetime],[createdbypersonaliasid],[modifiedbypersonaliasid],[notes],[anonymousattendancecount])
+                    OUTPUT INSERTED.ID
+                    VALUES (@groupid,@locationid,@scheduleid,@occurrencedate,@didnotoccur,@guid,@createddatetime,@modifieddatetime,@createdbypersonaliasid,
+                    @modifiedbypersonaliasid,@notes,@anonymousattendancecount)", _connection);
+                cmdInsertOccurrence.Parameters.Add("@id", SqlDbType.Int, 4).Direction = ParameterDirection.Output;
+                cmdInsertOccurrence.Parameters.Add(new SqlParameter("@groupid", attendance[0].GroupId));
+                cmdInsertOccurrence.Parameters.Add(new SqlParameter("@locationid", attendance[0].LocationId));
+                cmdInsertOccurrence.Parameters.Add(new SqlParameter("@scheduleid", attendance[0].ScheduleId));
+                cmdInsertOccurrence.Parameters.Add(new SqlParameter("@occurrencedate", sundaydate));
+                cmdInsertOccurrence.Parameters.Add(new SqlParameter("@didnotoccur", false));
+                cmdInsertOccurrence.Parameters.Add(new SqlParameter("@guid", Guid.NewGuid()));
+                cmdInsertOccurrence.Parameters.Add(new SqlParameter("@createddatetime", attendance[0].CreatedDateTime));
+                cmdInsertOccurrence.Parameters.Add(new SqlParameter("@modifieddatetime", attendance[0].ModifiedDateTime));
+                cmdInsertOccurrence.Parameters.Add(new SqlParameter("@createdbypersonaliasid", attendance[0].CreatedByPersonAliasId));
+                cmdInsertOccurrence.Parameters.Add(new SqlParameter("@modifiedbypersonaliasid", attendance[0].ModifiedByPersonAliasId));
+                cmdInsertOccurrence.Parameters.Add(new SqlParameter("@notes", "Added by rockx"));
+                cmdInsertOccurrence.Parameters.Add(new SqlParameter("@anonymousattendancecount", guestCount));
+                var occurrenceid = cmdInsertOccurrence.ExecuteScalar(); //.Parameters["@id"].Value;
+                //cmdInsertOccurrence.ExecuteNonQuery();
+
+                // Add to Attendance
                 foreach (var attendee in attendance)
                 {
-                    SqlCommand cmd = new SqlCommand($@"
-                    INSERT INTO attendance ([locationid],[groupid],[scheduleid],[startdatetime],[didattend],[note],[guid],[createddatetime],[modifieddatetime],
-                        [createdbypersonaliasid],[modifiedbypersonaliasid],[campusid],[personaliasid],[rsvp])
-                    VALUES (@locationid,@groupid,@scheduleid,@startdatetime,@didattend,@note,@guid,@createddatetime,@modifieddatetime,
-                        @createdbypersonaliasid,@modifiedbypersonaliasid,@campusid,@personaliasid,@rsvp)", _connection);
-                    cmd.Parameters.Add(new SqlParameter("@locationid", attendee.LocationId));
-                    cmd.Parameters.Add(new SqlParameter("@groupid", attendee.GroupId));
-                    cmd.Parameters.Add(new SqlParameter("@scheduleid", attendee.ScheduleId));
-                    cmd.Parameters.Add(new SqlParameter("@startdatetime", attendee.StartDateTime));
-                    cmd.Parameters.Add(new SqlParameter("@didattend", attendee.DidAttend));
-                    cmd.Parameters.Add(new SqlParameter("@note", attendee.Note));
-                    cmd.Parameters.Add(new SqlParameter("@guid", attendee.Guid));
-                    cmd.Parameters.Add(new SqlParameter("@createddatetime", attendee.CreatedDateTime));
-                    cmd.Parameters.Add(new SqlParameter("@modifieddatetime", attendee.ModifiedDateTime));
-                    cmd.Parameters.Add(new SqlParameter("@createdbypersonaliasid", attendee.CreatedByPersonAliasId));
-                    cmd.Parameters.Add(new SqlParameter("@modifiedbypersonaliasid", attendee.ModifiedByPersonAliasId));
-                    cmd.Parameters.Add(new SqlParameter("@campusid", attendee.CampusId));
-                    cmd.Parameters.Add(new SqlParameter("@personaliasid", attendee.PersonAliasId));
-                    cmd.Parameters.Add(new SqlParameter("@rsvp", attendee.Rsvp));
-                    cmd.ExecuteNonQuery();
+                    SqlCommand cmdInsertAttendance = new SqlCommand($@"
+                    INSERT INTO attendance ([startdatetime],[didattend],[note],[guid],[createddatetime],[modifieddatetime],
+                        [createdbypersonaliasid],[modifiedbypersonaliasid],[campusid],[personaliasid],[rsvp],[occurrenceid])
+                    VALUES (@startdatetime,@didattend,@note,@guid,@createddatetime,@modifieddatetime,
+                        @createdbypersonaliasid,@modifiedbypersonaliasid,@campusid,@personaliasid,@rsvp,@occurrenceid)", _connection);
+                    cmdInsertAttendance.Parameters.Add(new SqlParameter("@startdatetime", attendee.StartDateTime));
+                    cmdInsertAttendance.Parameters.Add(new SqlParameter("@didattend", attendee.DidAttend));
+                    cmdInsertAttendance.Parameters.Add(new SqlParameter("@note", attendee.Note));
+                    cmdInsertAttendance.Parameters.Add(new SqlParameter("@guid", attendee.Guid));
+                    cmdInsertAttendance.Parameters.Add(new SqlParameter("@createddatetime", attendee.CreatedDateTime));
+                    cmdInsertAttendance.Parameters.Add(new SqlParameter("@modifieddatetime", attendee.ModifiedDateTime));
+                    cmdInsertAttendance.Parameters.Add(new SqlParameter("@createdbypersonaliasid", attendee.CreatedByPersonAliasId));
+                    cmdInsertAttendance.Parameters.Add(new SqlParameter("@modifiedbypersonaliasid", attendee.ModifiedByPersonAliasId));
+                    cmdInsertAttendance.Parameters.Add(new SqlParameter("@campusid", attendee.CampusId));
+                    cmdInsertAttendance.Parameters.Add(new SqlParameter("@personaliasid", attendee.PersonAliasId));
+                    cmdInsertAttendance.Parameters.Add(new SqlParameter("@rsvp", attendee.Rsvp));
+                    cmdInsertAttendance.Parameters.Add(new SqlParameter("@occurrenceid", occurrenceid));
+                    cmdInsertAttendance.ExecuteNonQuery();
                 }
+
+                // Add to Guest
+                SqlCommand cmdInsertGuest = new SqlCommand($@"
+                INSERT INTO attendanceguests([createddatetime],[count],[createdbypersonaliasid],[sundaydatetime],[occurrenceid])
+                    VALUES(@createddatetime, @count, @createdbypersonaliasid, @sundaydatetime,@occurrenceid)", _connection);
+                cmdInsertGuest.Parameters.Add(new SqlParameter("@createddatetime", attendance[0].CreatedDateTime));
+                cmdInsertGuest.Parameters.Add(new SqlParameter("@count", guestCount));
+                cmdInsertGuest.Parameters.Add(new SqlParameter("@createdbypersonaliasid", attendance[0].CreatedByPersonAliasId));
+                cmdInsertGuest.Parameters.Add(new SqlParameter("@sundaydatetime", sundaydate));
+                cmdInsertGuest.Parameters.Add(new SqlParameter("@occurrenceid", occurrenceid));
+                cmdInsertGuest.ExecuteNonQuery();
+                
                 _connection.Close();
             }
             catch (Exception e)
