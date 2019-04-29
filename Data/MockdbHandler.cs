@@ -37,6 +37,12 @@ namespace rockx.Data
             return 7;
         }
 
+        public async Task AddGuestAttendance(int guestCount, DateTime date, int personId)
+        {
+            await Task.Delay(10);
+            return;
+        }
+
         public async Task AddAttendance(List<Attendance> attendance, int guestCount)
         {
             await Task.Delay(10);

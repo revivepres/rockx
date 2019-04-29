@@ -7,7 +7,7 @@
 <form asp-action="Save" class="mainbody">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <div class="form-group">
-        <strong><label class="control-label">Record Attendance</label></strong>
+        <strong><label class="control-label">Record Guest Attendance</label></strong>
         <div class="input-group">
             <div class="input-group-prepend">
                 <span class="input-group-text"><i class="far fa-calendar-alt"></i></span>
@@ -33,13 +33,13 @@
 
     <p><br /></p>
 
-    <table class="table table-hover">
+    <table class="table table-borderless table-hover">
         <thead>
         </thead>
         <tbody>
             <tr>
                 <td>
-                    <i class="fas fa-user-slash"></i>
+                    <i class="fas fa-church"></i>
                     Guests <br>
                     <small class="text-muted">Count: <span id="guestCount">0</span></small>
                 </td>
@@ -48,28 +48,6 @@
                     <button id="btnGuestinc" type="button" class="btn btn-info btnbox"><strong> + </strong></button>
                 </td>
             </tr>
-            @for (int i = 0; i < Model.People.Count; i++)
-            {
-                <tr>
-                    <td>
-                        <i class="fas fa-user-check"></i> @Model.People[i].FirstName @Model.People[i].LastName
-                    </td>
-                    <td class="text-right">
-                        <div hidden>
-                            @Html.CheckBoxFor(model => model.People[i].IsAttend, new { @id = "person_" + @i })
-                            @Html.TextBoxFor(model => model.People[i].FirstName)
-                            @Html.TextBoxFor(model => model.People[i].LastName)
-                            @Html.TextBoxFor(model => model.People[i].Id)
-                        </div>
-                        <div class="custom-control custom-checkbox">
-                            <input type="checkbox" class="custom-control-input attendchkbox"
-                                   id="@i"
-                                   checked="@Model.People[i].IsAttend">
-                            <label class="custom-control-label" for="@i">&nbsp;</label>
-                        </div>
-                    </td>
-                </tr>
-            }
         </tbody>
     </table>
 
@@ -84,13 +62,7 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <div id="alreadyRecorded" class="alert alert-danger" role="alert">
-                        <strong>
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </strong>
-                        Attendance for this date was already recorded.
-                    </div>
-                    Total Attendees: <span id="totalAttendees"></span><br />
+                    Total Guests: <span id="totalAttendees"></span><br />
                     Are you sure you want to save these changes?
                 </div>
                 <div class="modal-footer">

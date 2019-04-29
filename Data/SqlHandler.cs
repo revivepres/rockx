@@ -132,6 +132,44 @@ namespace rockx.Data
             return guestCount;
         }
 
+        public async Task AddGuestAttendance(int guestCount, DateTime date, int personId)
+        {
+            try
+            {
+                await _connection.OpenAsync();
+                // Clear out the tables if replacing record
+                SqlCommand cmdGetGuestAttendance = new SqlCommand($@"
+                    SELECT count FROM attendanceguests WHERE sundaydatetime = @sundaydate", _connection);
+                cmdGetGuestAttendance.Parameters.Add(new SqlParameter("@sundaydate", date));
+                var result = cmdGetGuestAttendance.ExecuteScalar();
+
+                if (result != null)
+                {
+                    // Delete from Guest
+                    SqlCommand cmdDeleteGuests = new SqlCommand($@"
+                        DELETE FROM attendanceguests WHERE sundaydatetime = @sundaydate", _connection);
+                    cmdDeleteGuests.Parameters.Add(new SqlParameter("@occurrenceid", date));
+                    cmdDeleteGuests.ExecuteNonQuery();
+                }
+
+                // Add to Guest
+                SqlCommand cmdInsertGuest = new SqlCommand($@"
+                INSERT INTO attendanceguests([createddatetime],[count],[createdbypersonaliasid],[sundaydatetime],[occurrenceid])
+                    VALUES(@createddatetime, @count, @createdbypersonaliasid, @sundaydatetime,@occurrenceid)", _connection);
+                cmdInsertGuest.Parameters.Add(new SqlParameter("@createddatetime", DateTime.Now));
+                cmdInsertGuest.Parameters.Add(new SqlParameter("@count", guestCount));
+                cmdInsertGuest.Parameters.Add(new SqlParameter("@createdbypersonaliasid", personId));
+                cmdInsertGuest.Parameters.Add(new SqlParameter("@sundaydatetime", date));
+                cmdInsertGuest.Parameters.Add(new SqlParameter("@occurrenceid", 1));
+                cmdInsertGuest.ExecuteNonQuery();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"ERROR - {e.Message}");
+            }
+            return;
+        }
+
         public async Task AddAttendance(List<Attendance> attendance, int guestCount)
         {
             try
@@ -223,7 +261,7 @@ namespace rockx.Data
                 cmdInsertGuest.Parameters.Add(new SqlParameter("@sundaydatetime", sundaydate));
                 cmdInsertGuest.Parameters.Add(new SqlParameter("@occurrenceid", occurrenceid));
                 cmdInsertGuest.ExecuteNonQuery();
-                
+
                 _connection.Close();
             }
             catch (Exception e)

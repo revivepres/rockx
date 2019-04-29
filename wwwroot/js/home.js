@@ -33,29 +33,9 @@ $("#btnSave").click(function (event) {
         event.stopPropagation();
         return;
     }
-    var total = $("input[type='checkbox']:checked").length;
-    if (total === 0) {
-        alert("Must select at least one member!");
-        event.stopPropagation();
-        return;
-    }
-    total = total / 2;
-    total += parseInt(GuestCount.get());
+
+    var total = parseInt(GuestCount.get());
     $("#totalAttendees").text(total);
-    $("#alreadyRecorded").hide();
-    $.ajax({
-        url: "api/HasRecords/" + date,
-        type: "get",
-        dataType: "json",
-        success: function (recorded, textStatus, jqXHR) {
-            if (recorded == true) {
-                $("#alreadyRecorded").show();
-            }
-        },
-        error: function (msg) {
-            alert("ERROR " + msg.statusText);
-        }
-    });
 });
 
 $("input[type='checkbox']").change(function (event) {

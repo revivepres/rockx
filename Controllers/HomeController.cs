@@ -37,30 +37,35 @@ namespace rockx.Controllers
         {
             if (ModelState.IsValid)
             {
-                List<Attendance> attendance = new List<Attendance>();
-                foreach (var person in model.People)
-                {
-                    Attendance record = new Attendance
-                    {
-                        CampusId = _configuration.GetValue<int>("CampusId"),
-                        CreatedByPersonAliasId = _configuration.GetValue<int>("PersonAliasId"),
-                        CreatedDateTime = DateTime.Now,
-                        DidAttend = person.IsAttend,
-                        Guid = Guid.NewGuid(),
-                        GroupId = _configuration.GetValue<int>("GroupId"),
-                        LocationId = _configuration.GetValue<int>("LocationId"),
-                        ModifiedByPersonAliasId = _configuration.GetValue<int>("PersonAliasId"),
-                        ModifiedDateTime = DateTime.Now,
-                        Note = "Recorded from Rockx",
-                        PersonAliasId = person.Id,
-                        Rsvp = _configuration.GetValue<int>("Rsvp"),
-                        ScheduleId = _configuration.GetValue<int>("ScheduleId"),
-                        StartDateTime = model.Date
-                    };
-                    attendance.Add(record);
-                }
-                await _dbHandler.AddAttendance(attendance, model.GuestCount);
+                // Only save guest could
+                int personid = _configuration.GetValue<int>("PersonAliasId");
+                await _dbHandler.AddGuestAttendance(model.GuestCount, model.Date, personid);
                 return View("Index", model);
+
+                //List<Attendance> attendance = new List<Attendance>();
+                //foreach (var person in model.People)
+                //{
+                //    Attendance record = new Attendance
+                //    {
+                //        CampusId = _configuration.GetValue<int>("CampusId"),
+                //        CreatedByPersonAliasId = _configuration.GetValue<int>("PersonAliasId"),
+                //        CreatedDateTime = DateTime.Now,
+                //        DidAttend = person.IsAttend,
+                //        Guid = Guid.NewGuid(),
+                //        GroupId = _configuration.GetValue<int>("GroupId"),
+                //        LocationId = _configuration.GetValue<int>("LocationId"),
+                //        ModifiedByPersonAliasId = _configuration.GetValue<int>("PersonAliasId"),
+                //        ModifiedDateTime = DateTime.Now,
+                //        Note = "Recorded from Rockx",
+                //        PersonAliasId = person.Id,
+                //        Rsvp = _configuration.GetValue<int>("Rsvp"),
+                //        ScheduleId = _configuration.GetValue<int>("ScheduleId"),
+                //        StartDateTime = model.Date
+                //    };
+                //    attendance.Add(record);
+                //}
+                //await _dbHandler.AddAttendance(attendance, model.GuestCount);
+                //return View("Index", model);
             }
             return RedirectToAction(nameof(Index));
         }
